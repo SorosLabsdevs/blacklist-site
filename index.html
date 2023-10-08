@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cellphone Blacklist Dapp</title>
+    <link rel="staylesheet" type="text/css" href="index.css"  >
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+
+<body>
+
+<div class="container mt-5">
+    <h2 class="text-center">Cellphone Blacklist</h2>
+
+    <div class="mt-4">
+        <button class="btn btn-primary" onclick="loadWeb3()">Connect Wallet</button>
+    </div>
+
+    <!-- Add Approved Entity -->
+    <div class="mt-4">
+        <h4>Add Approved Entity</h4>
+        <div class="form-group">
+            <label for="entityAddress">Entity Address:</label>
+            <input type="text" class="form-control" id="entityAddress">
+        </div>
+        <div class="form-group">
+            <label for="country">Country:</label>
+            <input type="text" class="form-control" id="country">
+        </div>
+        <button class="btn btn-success" onclick="addApprovedEntity()">Add Entity</button>
+    </div>
+
+    <!-- Remove Approved Entity -->
+    <div class="mt-4">
+        <h4>Remove Approved Entity</h4>
+        <div class="form-group">
+            <label for="removeEntityAddress">Entity Address:</label>
+            <input type="text" class="form-control" id="removeEntityAddress">
+        </div>
+        <div class="form-group">
+            <label for="removeCountry">Country:</label>
+            <input type="text" class="form-control" id="removeCountry">
+        </div>
+        <button class="btn btn-danger" onclick="removeApprovedEntity()">Remove Entity</button>
+    </div>
+
+    <!-- Blacklist Cellphone -->
+    <div class="mt-4">
+        <h4>Blacklist Cellphone</h4>
+        <div class="form-group">
+            <label for="imei">IMEI:</label>
+            <input type="text" class="form-control" id="imei">
+        </div>
+        <div class="form-group">
+            <label for="model">Model:</label>
+            <input type="text" class="form-control" id="model">
+        </div>
+        <div class="form-group">
+            <label for="location">Location of Theft:</label>
+            <input type="text" class="form-control" id="location">
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="isStolen">
+            <label class="form-check-label" for="isStolen">
+                Is Stolen?
+            </label>
+        </div>
+        <button class="btn btn-warning" onclick="blacklistCellphone()">Blacklist Cellphone</button>
+    </div>
+
+    <!-- Whitelist Cellphone -->
+    <div class="mt-4">
+        <h4>Whitelist Cellphone</h4>
+        <div class="form-group">
+            <label for="whitelistImei">IMEI:</label>
+            <input type="text" class="form-control" id="whitelistImei">
+        </div>
+        <button class="btn btn-info" onclick="whitelistCellphone()">Whitelist Cellphone</button>
+    </div>
+
+    <!-- Consult IMEI -->
+    <div class="mt-4">
+        <h4>Consult IMEI</h4>
+        <div class="form-group">
+            <label for="consultImei">IMEI:</label>
+            <input type="text" class="form-control" id="consultImei">
+        </div>
+        <button class="btn btn-secondary" onclick="consultImei()">Consult</button>
+
+        <div class="mt-4" id="imeiResult" style="display:none;">
+            <h5>IMEI Result:</h5>
+            <div>Model: <span id="consultModel"></span></div>
+            <div>Location of Theft: <span id="consultLocation"></span></div>
+            <div>Is Stolen?: <span id="consultIsStolen"></span></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.3.4/dist/web3.min.js"></script>
+<script>
+    let web3;
+    let contract;
+    const contractAddress = "0xE53ce0a3F51B8e4EfEac6B6e9BD989B9bF1F69a9";
+
+    async function loadWeb3() {
+        if (window.ethereum) {
+            window.web3 = new Web3(window.ethereum);
+            await window.ethereum.enable();
+            web3 = window.web3;
+            loadContract();
+        } else if (window.web3) {
+            web3 = window.web3;
+            loadContract();
+        } else {
+            alert("Non-Ethereum browser detected. Consider installing MetaMask!");
+        }
+    }
+    
+    async function loadContract() {
+        fetch('abi.json')
+            .then(response => response.json())
+            .then(abi => {
+                contract = new web3.eth.Contract(abi, contractAddress);
+                initApp();  // initialize the app after contract is loaded
+            });
+    }
+    
+    function initApp() {
+        web3.eth.getAccounts()
+            .then(addresses => {
+                if (addresses.length > 0) {
+                    web3.eth.defaultAccount = addresses[0];
+                } else {
+                    alert("No accounts found! Make sure your Ethereum wallet is unlocked and/or connected.");
+                }
+            });
+    }
+    
+    function addApprovedEntity() {
+        const entityAddress = document.getElementById('entityAddress').value;
+        const country = document.getElementById('country').value;
+
+        contract.methods.addApprovedEntity(entityAddress, country).send({ from: web3.eth.defaultAccount })
+            .then(receipt => {
+                alert('Entity added successfully!');
+            }).catch(error => {
+                alert('Error adding entity: ' + error.message);
+            });
+    }
+
+    function removeApprovedEntity() {
+        const entityAddress = document.getElementById('removeEntityAddress').value;
+        const country = document.getElementById('removeCountry').value;
+
+        contract.methods.removeApprovedEntity(entityAddress, country).send({ from: web3.eth.defaultAccount })
+            .then(receipt => {
+                alert('Entity removed successfully!');
+            }).catch(error => {
+                alert('Error removing entity: ' + error.message);
+            });
+    }
+
+    function blacklistCellphone() {
+        const imei = document.getElementById('imei').value;
+        const model = document.getElementById('model').value;
+        const location = document.getElementById('location').value;
+        const isStolen = document.getElementById('isStolen').checked;
+
+        contract.methods.blacklistCellphone(imei, model, location, isStolen).send({ from: web3.eth.defaultAccount })
+            .then(receipt => {
+                alert('Cellphone blacklisted successfully!');
+            }).catch(error => {
+                alert('Error blacklisting cellphone: ' + error.message);
+            });
+    }
+
+    function whitelistCellphone() {
+        const imei = document.getElementById('whitelistImei').value;
+
+        contract.methods.whitelistCellphone(imei).send({ from: web3.eth.defaultAccount })
+            .then(receipt => {
+                alert('Cellphone whitelisted successfully!');
+            }).catch(error => {
+                alert('Error whitelisting cellphone: ' + error.message);
+            });
+    }
+
+    function consultImei() {
+        const imei = document.getElementById('consultImei').value;
+
+        contract.methods.getBlacklistedCellphone(imei).call()
+            .then(result => {
+                document.getElementById('consultModel').innerText = result.model;
+                document.getElementById('consultLocation').innerText = result.locationOfTheft;
+                document.getElementById('consultIsStolen').innerText = result.isStolen ? "Yes" : "No";
+                document.getElementById('imeiResult').style.display = 'block';
+            }).catch(error => {
+                alert('Error consulting IMEI: ' + error.message);
+            });
+    }
+
+</script>
+
+</body>
+
+</html>
